@@ -1,0 +1,12 @@
+{
+  "miniprogramRoot": "./",
+  "projectname": "plum-app",
+  "description": "学习Taro",
+  "setting": {
+    "urlCheck": true,
+    "es6": false,
+    "postcss": false,
+    "minified": false
+  },
+  "compileType": "miniprogram"
+}
