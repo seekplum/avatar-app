@@ -5,7 +5,8 @@ import Taro from "@tarojs/taro";
 import { getGlobalData, setGlobalData, clearGlobalData } from "../../global";
 import * as utils from "../../utils";
 import { logger } from "../../log";
-import { HAT_CATEGORY, IMAGES_URL } from "../../constants";
+import { HAT_CATEGORY, IMAGES_URL, DEFAULT_EXPIRE } from "../../constants";
+
 import ChristmasHat from "./ChristmasHat";
 import NationalHat from "./NationalHat";
 
@@ -69,7 +70,7 @@ export default class Index extends Component<{}, State> {
         }
       } = response;
       this.setState({ templates });
-      setGlobalData("templates", JSON.stringify(templates));
+      setGlobalData("templates", JSON.stringify(templates), DEFAULT_EXPIRE);
     } catch (error) {
       logger.error("获取模板列表失败:", error);
       this.setState({ errorMsg: "服务异常，可以向开发者反馈解决。" });
