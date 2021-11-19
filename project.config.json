@@ -1,5 +1,7 @@
 {
     "miniprogramRoot": "dist/",
+    "cloudfunctionRoot": "cloud/functions/",
+    "cloudfunctionTemplateRoot": "cloud/template/",
     "projectname": "avatar-app",
     "description": "学习Taro",
     "setting": {

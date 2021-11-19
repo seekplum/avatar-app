@@ -1,0 +1,8 @@
+[
+  {
+    "name": "api-template-list",
+    "value": {
+      "$url": "template/list"
+    }
+  }
+]
