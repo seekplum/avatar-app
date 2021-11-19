@@ -7,20 +7,20 @@ class TemplateController extends BaseController {
   async list(event) {
     const templates = [
       {
-        demoImg: CONSTANTS.IMAGES_URL.DEMO_NATIONAL1,
-        hatImg: CONSTANTS.IMAGES_URL.HAT_NATIONAL1,
+        demoImg: CONSTANTS.STORAGE_PREFIX + "/images/national1.png",
+        hatImg: CONSTANTS.STORAGE_PREFIX + "/images/national1.png",
         category: CONSTANTS.HAT_CATEGORY.NATIONAL
       },
       {
-        demoImg: CONSTANTS.IMAGES_URL.DEMO_CHRISTMAS1,
-        hatImg: CONSTANTS.IMAGES_URL.HAT_CHRISTMAS1,
+        demoImg: CONSTANTS.STORAGE_PREFIX + "/images/christmas1.png",
+        hatImg: CONSTANTS.STORAGE_PREFIX + "/images/christmas1.png",
         category: CONSTANTS.HAT_CATEGORY.CHRISTMAS,
         x: CONSTANTS.CHRISTMAS_DEFAULT_WIDTH / 2 + 10,
         y: CONSTANTS.CHRISTMAS_DEFAULT_HEIGHT / 2 + 10
       },
       {
-        demoImg: CONSTANTS.IMAGES_URL.DEMO_CHRISTMAS2,
-        hatImg: CONSTANTS.IMAGES_URL.HAT_CHRISTMAS2,
+        demoImg: CONSTANTS.STORAGE_PREFIX + "/images/christmas2.png",
+        hatImg: CONSTANTS.STORAGE_PREFIX + "/images/christmas2.png",
         category: CONSTANTS.HAT_CATEGORY.CHRISTMAS,
         x:
           CONSTANTS.CANVAS_WIDTH - (CONSTANTS.CHRISTMAS_DEFAULT_WIDTH / 2 + 10),

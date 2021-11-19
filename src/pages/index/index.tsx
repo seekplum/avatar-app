@@ -5,13 +5,7 @@ import Taro from "@tarojs/taro";
 import { getGlobalData, setGlobalData, clearGlobalData } from "../../global";
 import * as utils from "../../utils";
 import { logger } from "../../log";
-import {
-  HAT_CATEGORY,
-  IMAGES_URL,
-  CANVAS_WIDTH,
-  CHRISTMAS_DEFAULT_WIDTH,
-  CHRISTMAS_DEFAULT_HEIGHT
-} from "../../constants";
+import { HAT_CATEGORY, IMAGES_URL } from "../../constants";
 import ChristmasHat from "./ChristmasHat";
 import NationalHat from "./NationalHat";
 
@@ -22,29 +16,8 @@ interface State {
   errorMsg: string;
   atIndex: number;
   hatImgPath: any;
+  templates: Array<any>;
 }
-
-const avatarList = [
-  {
-    demoImg: IMAGES_URL.DEMO_NATIONAL1,
-    hatImg: IMAGES_URL.HAT_NATIONAL1,
-    category: HAT_CATEGORY.NATIONAL
-  },
-  {
-    demoImg: IMAGES_URL.DEMO_CHRISTMAS1,
-    hatImg: IMAGES_URL.HAT_CHRISTMAS1,
-    category: HAT_CATEGORY.CHRISTMAS,
-    x: CHRISTMAS_DEFAULT_WIDTH / 2 + 10,
-    y: CHRISTMAS_DEFAULT_HEIGHT / 2 + 10
-  },
-  {
-    demoImg: IMAGES_URL.DEMO_CHRISTMAS2,
-    hatImg: IMAGES_URL.HAT_CHRISTMAS2,
-    category: HAT_CATEGORY.CHRISTMAS,
-    x: CANVAS_WIDTH - (CHRISTMAS_DEFAULT_WIDTH / 2 + 10),
-    y: CHRISTMAS_DEFAULT_HEIGHT / 2 + 10
-  }
-];
 
 export default class Index extends Component<{}, State> {
   constructor(props) {
@@ -53,7 +26,8 @@ export default class Index extends Component<{}, State> {
       avatarPath: "",
       errorMsg: "",
       atIndex: 0,
-      hatImgPath: ""
+      hatImgPath: "",
+      templates: []
     };
   }
   async componentWillMount() {
@@ -63,11 +37,43 @@ export default class Index extends Component<{}, State> {
         avatarPath: cacheAvatarPath
       });
     }
+    await this.getTemplates();
   }
   async componentDidMount() {
     const { atIndex } = this.state;
     const hatImgPath = await this.getTempFilePath(atIndex);
     this.setState({ hatImgPath });
+  }
+  async getTemplates() {
+    // 优先从缓存中获取
+    const cacheTemplates = getGlobalData("templates");
+    if (cacheTemplates) {
+      try {
+        const templates = JSON.parse(cacheTemplates);
+        this.setState({ templates });
+        return;
+      } catch (error) {
+        logger.error("模板数据被损坏:", cacheTemplates);
+      }
+    }
+    try {
+      const response = await Taro.cloud.callFunction({
+        name: "api",
+        data: {
+          $url: "template/list"
+        }
+      });
+      const {
+        result: {
+          data: { templates }
+        }
+      } = response;
+      this.setState({ templates });
+      setGlobalData("templates", JSON.stringify(templates));
+    } catch (error) {
+      logger.error("获取模板列表失败:", error);
+      this.setState({ errorMsg: "服务异常，可以向开发者反馈解决。" });
+    }
   }
   async handleGetUserProfile() {
     try {
@@ -100,7 +106,9 @@ export default class Index extends Component<{}, State> {
   }
 
   async getTempFilePath(atIndex) {
-    const at = avatarList[atIndex];
+    const { templates } = this.state;
+    const at = templates[atIndex];
+    if (!at) return;
     const { hatImg } = at;
     // 本地图片，直接返回
     if (typeof hatImg !== "string") {
@@ -144,8 +152,8 @@ export default class Index extends Component<{}, State> {
   }
 
   renderCanvas() {
-    const { atIndex, avatarPath, hatImgPath } = this.state;
-    const at = avatarList[atIndex];
+    const { atIndex, avatarPath, hatImgPath, templates } = this.state;
+    const at = templates[atIndex];
     if (!at) return;
     // 通过解构方式删除 category, demoImg, hatImg 字段
     const { category, demoImg, hatImg, ...args } = at;
@@ -162,12 +170,12 @@ export default class Index extends Component<{}, State> {
   }
 
   renderAvatar() {
-    const { atIndex } = this.state;
+    const { atIndex, templates } = this.state;
     return (
       <>
         {this.renderCanvas()}
         <View className="avatarContainer">
-          {avatarList.map((at, idx) => {
+          {templates.map((at, idx) => {
             const { demoImg } = at;
             const cacheDemoImg =
               typeof demoImg === "string"
