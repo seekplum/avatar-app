@@ -2,7 +2,7 @@
 import React, { Component, ReactFragment } from "react";
 import { Button, View, Text, Image, Block } from "@tarojs/components";
 import Taro from "@tarojs/taro";
-import { getGlobalData, setGlobalData, delGlobalData } from "../../global";
+import { getGlobalData, setGlobalData, clearGlobalData } from "../../global";
 import * as utils from "../../utils";
 import { logger } from "../../log";
 import {
@@ -21,6 +21,7 @@ interface State {
   avatarPath: string;
   errorMsg: string;
   atIndex: number;
+  hatImgPath: any;
 }
 
 const avatarList = [
@@ -51,17 +52,22 @@ export default class Index extends Component<{}, State> {
     this.state = {
       avatarPath: "",
       errorMsg: "",
-      atIndex: 0
+      atIndex: 0,
+      hatImgPath: ""
     };
   }
-
-  componentWillMount() {
+  async componentWillMount() {
     const cacheAvatarPath = getGlobalData("avatarPath");
-    if (cacheAvatarPath) {
+    if (cacheAvatarPath && utils.checkFileExists(cacheAvatarPath)) {
       this.setState({
         avatarPath: cacheAvatarPath
       });
     }
+  }
+  async componentDidMount() {
+    const { atIndex } = this.state;
+    const hatImgPath = await this.getTempFilePath(atIndex);
+    this.setState({ hatImgPath });
   }
   async handleGetUserProfile() {
     try {
@@ -89,12 +95,32 @@ export default class Index extends Component<{}, State> {
   }
 
   async handleReset() {
-    delGlobalData("avatarPath");
+    clearGlobalData();
     await this.handleGetUserProfile();
   }
 
+  async getTempFilePath(atIndex) {
+    const at = avatarList[atIndex];
+    const { hatImg } = at;
+    // 本地图片，直接返回
+    if (typeof hatImg !== "string") {
+      return hatImg;
+    }
+    const cacheHatPath = getGlobalData(hatImg);
+    if (cacheHatPath && utils.checkFileExists(cacheHatPath)) {
+      return cacheHatPath;
+    }
+    const hatImgPath = await utils.downloadFile(hatImg);
+    // 换成链接对应图片的临时路径
+    if (typeof hatImgPath === "string") {
+      setGlobalData(hatImg, hatImgPath);
+    }
+    return hatImgPath;
+  }
+
   async handleCategory(atIndex: number) {
-    this.setState({ atIndex });
+    const hatImgPath = await this.getTempFilePath(atIndex);
+    this.setState({ atIndex, hatImgPath });
   }
 
   renderUnauthorized(): ReactFragment {
@@ -118,14 +144,19 @@ export default class Index extends Component<{}, State> {
   }
 
   renderCanvas() {
-    const { atIndex, avatarPath } = this.state;
+    const { atIndex, avatarPath, hatImgPath } = this.state;
     const at = avatarList[atIndex];
     if (!at) return;
-    const { category, demoImg, ...args } = at;
+    // 通过解构方式删除 category, demoImg, hatImg 字段
+    const { category, demoImg, hatImg, ...args } = at;
     if (category === HAT_CATEGORY.CHRISTMAS) {
-      return <ChristmasHat avatarPath={avatarPath} {...args} />;
+      return (
+        <ChristmasHat avatarPath={avatarPath} hatImg={hatImgPath} {...args} />
+      );
     } else if (category === HAT_CATEGORY.NATIONAL) {
-      return <NationalHat avatarPath={avatarPath} {...args} />;
+      return (
+        <NationalHat avatarPath={avatarPath} hatImg={hatImgPath} {...args} />
+      );
     }
     return;
   }
@@ -137,11 +168,16 @@ export default class Index extends Component<{}, State> {
         {this.renderCanvas()}
         <View className="avatarContainer">
           {avatarList.map((at, idx) => {
+            const { demoImg } = at;
+            const cacheDemoImg =
+              typeof demoImg === "string"
+                ? getGlobalData(demoImg) || demoImg
+                : demoImg;
             return (
               <Image
                 key={`${at.category}_${at.hatImg}`}
                 className={`avatarDemo ${idx === atIndex ? "active" : ""}`}
-                src={at.demoImg}
+                src={cacheDemoImg}
                 onClick={() => this.handleCategory(idx)}
               />
             );

@@ -62,15 +62,32 @@ export async function saveCanvasToAlbum(canvasId: string) {
   }
 }
 
-export async function downloadFile(url: string) {
-  try {
-    const task = await Taro.downloadFile({
-      url
-    });
-    return task.tempFilePath;
-  } catch (err) {
-    logger.error("下载用户头像失败:", err);
+export async function downloadFile(url: any) {
+  if (typeof url !== "string") {
+    return url;
   }
+  if (url.startsWith("http://") || url.startsWith("https://")) {
+    try {
+      const task = await Taro.downloadFile({
+        url
+      });
+      return task.tempFilePath;
+    } catch (err) {
+      logger.error("下载URL内容失败:", err);
+      throw err;
+    }
+  } else if (url.startsWith("cloud://")) {
+    try {
+      const response = await Taro.cloud.downloadFile({
+        fileID: url
+      });
+      return response.tempFilePath;
+    } catch (err) {
+      logger.error("下载云存储文件失败:", err);
+      throw err;
+    }
+  }
+  return url;
 }
 
 export async function getUserInfoAndDownloadAvatar() {
@@ -92,4 +109,14 @@ export async function getUserInfoAndDownloadAvatar() {
       logger.error("获取用户信息失败:", err);
     }
   } catch (error) {}
+}
+
+export function checkFileExists(path: string): boolean {
+  const fs = Taro.getFileSystemManager();
+  try {
+    fs.accessSync(path);
+  } catch (error) {
+    return false;
+  }
+  return true;
 }
