@@ -1,106 +1,68 @@
 /** @format */
-import { Component, ReactFragment } from "react";
-import {
-  Button,
-  View,
-  Text,
-  Slider,
-  Canvas,
-  Image,
-  Block
-} from "@tarojs/components";
+import React, { Component, ReactFragment } from "react";
+import { Button, View, Text, Image, Block } from "@tarojs/components";
 import Taro from "@tarojs/taro";
 import { getGlobalData, setGlobalData, delGlobalData } from "../../global";
 import * as utils from "../../utils";
 import { logger } from "../../log";
-import DEMO_IMG from "../../images/demo.png";
-import HAT_IMG from "../../images/hat.png";
+import {
+  HAT_CATEGORY,
+  IMAGES_URL,
+  CANVAS_WIDTH,
+  CHRISTMAS_DEFAULT_WIDTH,
+  CHRISTMAS_DEFAULT_HEIGHT
+} from "../../constants";
+import ChristmasHat from "./ChristmasHat";
+import NationalHat from "./NationalHat";
 
 import "./index.scss";
 
-const DEFAULT_HEIGHT = 100;
-const DEFAULT_WIDTH = 100;
-
-interface IndexProps {
+interface State {
   avatarPath: string;
-  width: number;
-  height: number;
-  x: number;
-  y: number;
-  scale: number;
-  rotate: number;
   errorMsg: string;
+  atIndex: number;
 }
 
-export default class Index extends Component<{}, IndexProps> {
+const avatarList = [
+  {
+    demoImg: IMAGES_URL.DEMO_NATIONAL1,
+    hatImg: IMAGES_URL.HAT_NATIONAL1,
+    category: HAT_CATEGORY.NATIONAL
+  },
+  {
+    demoImg: IMAGES_URL.DEMO_CHRISTMAS1,
+    hatImg: IMAGES_URL.HAT_CHRISTMAS1,
+    category: HAT_CATEGORY.CHRISTMAS,
+    x: CHRISTMAS_DEFAULT_WIDTH / 2 + 10,
+    y: CHRISTMAS_DEFAULT_HEIGHT / 2 + 10
+  },
+  {
+    demoImg: IMAGES_URL.DEMO_CHRISTMAS2,
+    hatImg: IMAGES_URL.HAT_CHRISTMAS2,
+    category: HAT_CATEGORY.CHRISTMAS,
+    x: CANVAS_WIDTH - (CHRISTMAS_DEFAULT_WIDTH / 2 + 10),
+    y: CHRISTMAS_DEFAULT_HEIGHT / 2 + 10
+  }
+];
+
+export default class Index extends Component<{}, State> {
   constructor(props) {
     super(props);
     this.state = {
       avatarPath: "",
-      width: DEFAULT_WIDTH,
-      height: DEFAULT_HEIGHT,
-      x: DEFAULT_WIDTH / 2 + 10,
-      y: DEFAULT_HEIGHT / 2 + 10,
-      rotate: 0,
-      scale: 100,
-      errorMsg: ""
+      errorMsg: "",
+      atIndex: 0
     };
   }
-  async componentWillMount() {
+
+  componentWillMount() {
     const cacheAvatarPath = getGlobalData("avatarPath");
     if (cacheAvatarPath) {
-      this.handleDataCanvas({
-        avatarPath: cacheAvatarPath,
-        errorMsg: ""
+      this.setState({
+        avatarPath: cacheAvatarPath
       });
     }
   }
-
-  componentDidMount() {
-    this.handleRenderCanvas();
-  }
-
-  handleDataCanvas(data) {
-    this.setState(data);
-    this.handleRenderCanvas();
-  }
-  handleMoveHat = e => {
-    const touch = e.touches[0];
-    if (touch === undefined) return;
-    this.handleDataCanvas({
-      x: touch.x,
-      y: touch.y
-    });
-  };
-  handleRotateHat = e => {
-    const val = e.detail && e.detail.value;
-    if (val === undefined) return;
-    this.handleDataCanvas({
-      rotate: val
-    });
-  };
-  handleScaleHat = e => {
-    const val = e.detail && e.detail.value;
-    if (val === undefined) return;
-    this.handleDataCanvas({
-      scale: val
-    });
-  };
-  handleRenderCanvas(): void {
-    const { avatarPath } = this.state;
-    if (!avatarPath) return;
-    const { x, y, width, height, scale, rotate } = this.state;
-    const newScale = scale / 100;
-    const newRotate = (rotate * Math.PI) / 180;
-    const context = Taro.createCanvasContext("avatarCanvas");
-    context.drawImage(avatarPath, 0, 0, 300, 300);
-    context.translate(x, y);
-    context.scale(newScale, newScale);
-    context.rotate(newRotate);
-    context.drawImage(HAT_IMG, -width / 2, -height / 2, width, height);
-    context.draw();
-  }
-
   async handleGetUserProfile() {
     try {
       const response = await Taro.getUserProfile({
@@ -115,7 +77,7 @@ export default class Index extends Component<{}, IndexProps> {
         utils.getBetterAvatar(avatarUrl)
       );
       setGlobalData("avatarPath", avatarPath);
-      this.handleDataCanvas({ avatarPath, errorMsg: "" });
+      this.setState({ avatarPath, errorMsg: "" });
     } catch (err) {
       //拒绝授权
       logger.error("您拒绝了请求");
@@ -131,12 +93,18 @@ export default class Index extends Component<{}, IndexProps> {
     await this.handleGetUserProfile();
   }
 
+  async handleCategory(atIndex: number) {
+    this.setState({ atIndex });
+  }
+
   renderUnauthorized(): ReactFragment {
     const { errorMsg } = this.state;
     return (
       <Block>
-        <Image className="demo" src={DEMO_IMG} />
-        <Text className="desc">给头像加上可爱的圣诞帽，点击使用</Text>
+        <Image className="demo" src={IMAGES_URL.DEMO} />
+        <Text className="desc">
+          给头像加上国旗🇨🇳、圣诞帽,获取头像后开始制作~
+        </Text>
         <Button
           type="default"
           size="mini"
@@ -149,38 +117,35 @@ export default class Index extends Component<{}, IndexProps> {
     );
   }
 
-  renderAvatar(): ReactFragment {
-    const { rotate, scale, errorMsg } = this.state;
+  renderCanvas() {
+    const { atIndex, avatarPath } = this.state;
+    const at = avatarList[atIndex];
+    if (!at) return;
+    const { category, demoImg, ...args } = at;
+    if (category === HAT_CATEGORY.CHRISTMAS) {
+      return <ChristmasHat avatarPath={avatarPath} {...args} />;
+    } else if (category === HAT_CATEGORY.NATIONAL) {
+      return <NationalHat avatarPath={avatarPath} {...args} />;
+    }
+    return;
+  }
+
+  renderAvatar() {
+    const { atIndex } = this.state;
     return (
-      <Block>
-        <Canvas
-          canvasId="avatarCanvas"
-          className="canvas"
-          onTouchStart={this.handleMoveHat}
-          onTouchMove={this.handleMoveHat}
-          style="width: 300px; height: 300px;"
-        />
-        <View className="flexCenter">
-          <Text>旋转</Text>
-          <Slider
-            className="slider"
-            min={0}
-            max={360}
-            step={1}
-            value={rotate}
-            onChanging={this.handleRotateHat}
-          />
-        </View>
-        <View className="flexCenter">
-          <Text>缩放</Text>
-          <Slider
-            className="slider"
-            min={20}
-            max={200}
-            step={1}
-            value={scale}
-            onChanging={this.handleScaleHat}
-          />
+      <>
+        {this.renderCanvas()}
+        <View className="avatarContainer">
+          {avatarList.map((at, idx) => {
+            return (
+              <Image
+                key={`${at.category}_${at.hatImg}`}
+                className={`avatarDemo ${idx === atIndex ? "active" : ""}`}
+                src={at.demoImg}
+                onClick={() => this.handleCategory(idx)}
+              />
+            );
+          })}
         </View>
         <View className="flexCenter buttonContainer">
           <Button
@@ -200,17 +165,18 @@ export default class Index extends Component<{}, IndexProps> {
             保存至相册
           </Button>
         </View>
-        {errorMsg && <Text className="error-msg">{errorMsg}</Text>}
-      </Block>
+      </>
     );
   }
 
   render() {
-    const { avatarPath } = this.state;
+    const { avatarPath, errorMsg } = this.state;
     return (
       <View className="container">
         <View className="contentWrapper">
-          {avatarPath ? this.renderAvatar() : this.renderUnauthorized()}
+          {!!avatarPath && !errorMsg
+            ? this.renderAvatar()
+            : this.renderUnauthorized()}
         </View>
       </View>
     );

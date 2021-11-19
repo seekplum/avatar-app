@@ -38,6 +38,7 @@
 .desc {
   margin-top: 32px;
   margin-bottom: 32px;
+  width: 480px;
 }
 
 .error-msg {
@@ -48,4 +49,29 @@
 .canvas {
   width: 300px;
   height: 300px;
+}
+
+.avatarContainer {
+  width: 600px;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  margin: 8px 0;
+}
+
+.avatarDemo {
+  width: 120px;
+  height: 120px;
+  padding: 4px;
+  border: 1px solid #e6e6e6;
+
+  &.active {
+    border-color: #0088df;
+  }
+
+  &:nth-child(n + 4) {
+    margin-top: 8px;
+  }
 }
