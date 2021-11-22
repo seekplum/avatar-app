@@ -2,7 +2,7 @@
 import React, { Component, ReactFragment } from "react";
 import { Button, View, Text, Image, Block } from "@tarojs/components";
 import Taro from "@tarojs/taro";
-import { getGlobalData, setGlobalData, clearGlobalData } from "../../global";
+import { getGlobalData, setGlobalData, delGlobalData } from "../../global";
 import * as utils from "../../utils";
 import { logger } from "../../log";
 import { HAT_CATEGORY, IMAGES_URL, DEFAULT_EXPIRE } from "../../constants";
@@ -41,9 +41,20 @@ export default class Index extends Component<{}, State> {
     await this.getTemplates();
   }
   async componentDidMount() {
-    const { atIndex } = this.state;
-    const hatImgPath = await this.getTempFilePath(atIndex);
-    this.setState({ hatImgPath });
+    await this.getHatImg();
+  }
+  async getHatImg() {
+    const { atIndex, hatImgPath } = this.state;
+    if (hatImgPath) return;
+    const cacheHatImgPath = this.getCacheHatImg(atIndex);
+    if (cacheHatImgPath) {
+      this.setState({ hatImgPath: cacheHatImgPath });
+      return;
+    }
+    const tempHatImgPath = await this.getTempFilePath(atIndex);
+    if (tempHatImgPath) {
+      this.setState({ hatImgPath: tempHatImgPath });
+    }
   }
   async getTemplates() {
     // 优先从缓存中获取
@@ -75,6 +86,7 @@ export default class Index extends Component<{}, State> {
       logger.error("获取模板列表失败:", error);
       this.setState({ errorMsg: "服务异常，可以向开发者反馈解决。" });
     }
+    await this.getHatImg();
   }
   async handleGetUserProfile() {
     try {
@@ -102,11 +114,11 @@ export default class Index extends Component<{}, State> {
   }
 
   async handleReset() {
-    clearGlobalData();
+    delGlobalData("templates");
     await this.handleGetUserProfile();
   }
 
-  async getTempFilePath(atIndex) {
+  getCacheHatImg(atIndex: number) {
     const { templates } = this.state;
     const at = templates[atIndex];
     if (!at) return;
@@ -119,17 +131,32 @@ export default class Index extends Component<{}, State> {
     if (cacheHatPath && utils.checkFileExists(cacheHatPath)) {
       return cacheHatPath;
     }
-    const hatImgPath = await utils.downloadFile(hatImg);
-    // 换成链接对应图片的临时路径
-    if (typeof hatImgPath === "string") {
-      setGlobalData(hatImg, hatImgPath);
+  }
+
+  async getTempFilePath(atIndex) {
+    const cacheHatImgPath = this.getCacheHatImg(atIndex);
+    if (cacheHatImgPath) return cacheHatImgPath;
+    const { templates } = this.state;
+    const at = templates[atIndex];
+    if (!at) return;
+    const { hatImg } = at;
+    try {
+      const hatImgPath = await utils.downloadFile(hatImg);
+      // 换成链接对应图片的临时路径
+      if (typeof hatImgPath === "string") {
+        setGlobalData(hatImg, hatImgPath);
+      }
+      return hatImgPath;
+    } catch (error) {
+      this.setState({ errorMsg: "请重新获取头像后再试~" });
     }
-    return hatImgPath;
   }
 
   async handleCategory(atIndex: number) {
     const hatImgPath = await this.getTempFilePath(atIndex);
-    this.setState({ atIndex, hatImgPath });
+    if (hatImgPath) {
+      this.setState({ atIndex, hatImgPath });
+    }
   }
 
   renderUnauthorized(): ReactFragment {
@@ -215,11 +242,11 @@ export default class Index extends Component<{}, State> {
   }
 
   render() {
-    const { avatarPath, errorMsg } = this.state;
+    const { avatarPath, hatImgPath, errorMsg } = this.state;
     return (
       <View className="container">
         <View className="contentWrapper">
-          {!!avatarPath && !errorMsg
+          {!!avatarPath && !!hatImgPath && !errorMsg
             ? this.renderAvatar()
             : this.renderUnauthorized()}
         </View>
