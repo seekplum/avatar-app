@@ -26,6 +26,8 @@ interface State {
   y: number;
   scale: number;
   rotate: number;
+  scaleChanged: boolean;
+  rotateChanged: boolean;
 }
 
 export default class ChristmasHat extends Component<Props, State> {
@@ -43,7 +45,9 @@ export default class ChristmasHat extends Component<Props, State> {
       x: this.props.x || CHRISTMAS_DEFAULT_WIDTH / 2 + 10,
       y: this.props.y || CHRISTMAS_DEFAULT_HEIGHT / 2 + 10,
       rotate: 0,
-      scale: 100
+      scale: 100,
+      scaleChanged: false,
+      rotateChanged: false
     };
   }
   componentDidMount() {
@@ -59,7 +63,7 @@ export default class ChristmasHat extends Component<Props, State> {
     }
     if (Object.keys(values).length > 0) {
       values = { ...values, rotate: 0, scale: 100 };
-      this.handleDataCanvas(values);
+      this.setState(values);
     }
   }
   componentDidUpdate(prevProps, prevState) {
@@ -68,6 +72,8 @@ export default class ChristmasHat extends Component<Props, State> {
       prevProps.avatarPath !== this.props.avatarPath;
     if (needUpdate) {
       this.handleDelayRenderCanvas();
+    } else if (prevState !== this.state) {
+      this.handleRenderCanvas();
     }
   }
   handleDelayRenderCanvas(): void {
@@ -75,30 +81,52 @@ export default class ChristmasHat extends Component<Props, State> {
       this.handleRenderCanvas();
     }, CANVAS_DELAY);
   }
-  handleDataCanvas(data) {
-    this.setState(data);
-    this.handleRenderCanvas();
-  }
   handleMoveHat = e => {
     const touch = e.touches[0];
     if (touch === undefined) return;
-    this.handleDataCanvas({
+    this.setState({
       x: touch.x,
       y: touch.y
+    });
+  };
+  handleChangeRotateHat = e => {
+    const { rotateChanged } = this.state;
+    this.setState({ rotateChanged: false });
+    if (rotateChanged) {
+      return;
+    }
+    const val = e.detail && e.detail.value;
+    if (val === undefined) return;
+    this.setState({
+      rotate: val
+    });
+  };
+  handleChangeScaleHat = e => {
+    const { scaleChanged } = this.state;
+    this.setState({ scaleChanged: false });
+    if (scaleChanged) {
+      return;
+    }
+    const val = e.detail && e.detail.value;
+    if (val === undefined) return;
+    this.setState({
+      scale: val
     });
   };
   handleRotateHat = e => {
     const val = e.detail && e.detail.value;
     if (val === undefined) return;
-    this.handleDataCanvas({
-      rotate: val
+    this.setState({
+      rotate: val,
+      rotateChanged: true
     });
   };
   handleScaleHat = e => {
     const val = e.detail && e.detail.value;
     if (val === undefined) return;
-    this.handleDataCanvas({
-      scale: val
+    this.setState({
+      scale: val,
+      scaleChanged: true
     });
   };
   handleRenderCanvas(): void {
@@ -139,6 +167,7 @@ export default class ChristmasHat extends Component<Props, State> {
             max={360}
             step={1}
             value={rotate}
+            onChange={this.handleChangeRotateHat}
             onChanging={this.handleRotateHat}
           />
         </View>
@@ -150,6 +179,7 @@ export default class ChristmasHat extends Component<Props, State> {
             max={200}
             step={1}
             value={scale}
+            onChange={this.handleChangeScaleHat}
             onChanging={this.handleScaleHat}
           />
         </View>

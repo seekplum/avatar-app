@@ -38,16 +38,14 @@ export default class NationalHat extends Component<Props, State> {
       prevProps.avatarPath !== this.props.avatarPath;
     if (needUpdate) {
       this.handleDelayRenderCanvas();
+    } else if (prevState !== this.state) {
+      this.handleRenderCanvas();
     }
   }
   handleDelayRenderCanvas(): void {
     setTimeout(() => {
       this.handleRenderCanvas();
     }, CANVAS_DELAY);
-  }
-  handleDataCanvas(data) {
-    this.setState(data);
-    this.handleRenderCanvas();
   }
   handleRenderCanvas(): void {
     const { avatarPath, hatImg } = this.props;
