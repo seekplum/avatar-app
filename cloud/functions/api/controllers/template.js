@@ -12,6 +12,31 @@ class TemplateController extends BaseController {
         category: CONSTANTS.HAT_CATEGORY.NATIONAL
       },
       {
+        demoImg: CONSTANTS.STORAGE_PREFIX + "/images/national2.png",
+        hatImg: CONSTANTS.STORAGE_PREFIX + "/images/national2.png",
+        category: CONSTANTS.HAT_CATEGORY.NATIONAL
+      },
+      {
+        demoImg: CONSTANTS.STORAGE_PREFIX + "/images/national3.png",
+        hatImg: CONSTANTS.STORAGE_PREFIX + "/images/national3.png",
+        category: CONSTANTS.HAT_CATEGORY.NATIONAL
+      },
+      {
+        demoImg: CONSTANTS.STORAGE_PREFIX + "/images/national4.png",
+        hatImg: CONSTANTS.STORAGE_PREFIX + "/images/national4.png",
+        category: CONSTANTS.HAT_CATEGORY.NATIONAL
+      },
+      {
+        demoImg: CONSTANTS.STORAGE_PREFIX + "/images/national5.png",
+        hatImg: CONSTANTS.STORAGE_PREFIX + "/images/national5.png",
+        category: CONSTANTS.HAT_CATEGORY.NATIONAL
+      },
+      {
+        demoImg: CONSTANTS.STORAGE_PREFIX + "/images/national6.png",
+        hatImg: CONSTANTS.STORAGE_PREFIX + "/images/national6.png",
+        category: CONSTANTS.HAT_CATEGORY.NATIONAL
+      },
+      {
         demoImg: CONSTANTS.STORAGE_PREFIX + "/images/christmas1.png",
         hatImg: CONSTANTS.STORAGE_PREFIX + "/images/christmas1.png",
         category: CONSTANTS.HAT_CATEGORY.CHRISTMAS,

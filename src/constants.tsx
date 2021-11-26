@@ -10,7 +10,7 @@ export const HAT_CATEGORY = {
   NATIONAL: "national"
 };
 
-const STORAGE_PREFIX =
+export const STORAGE_PREFIX =
   "cloud://seekplum-6gqnvlnl5ce6b5f1.7365-seekplum-6gqnvlnl5ce6b5f1-1308378299";
 
 export const IMAGES_URL = {

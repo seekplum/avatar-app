@@ -53,11 +53,10 @@
 
 .avatarContainer {
   width: 600px;
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  align-items: center;
+  display: grid;
   justify-content: space-between;
+  grid-template-columns: repeat(auto-fill, 120px);
+  grid-gap: 8px;
   margin: 8px 0;
 }
 
