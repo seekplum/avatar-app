@@ -3,11 +3,11 @@ export const CANVAS_HEIGHT = 300;
 export const CANVAS_DELAY = 100;
 export const DEFAULT_EXPIRE = 60 * 60;
 
-export const CHRISTMAS_DEFAULT_HEIGHT = 110.81;
-export const CHRISTMAS_DEFAULT_WIDTH = 100;
+export const EDITABLE_DEFAULT_HEIGHT = 110.81;
+export const EDITABLE_DEFAULT_WIDTH = 100;
 export const HAT_CATEGORY = {
-  CHRISTMAS: "christmas",
-  NATIONAL: "national"
+  EDITABLE: "editable",
+  SHOW_ONLY: "show_only"
 };
 
 export const STORAGE_PREFIX =

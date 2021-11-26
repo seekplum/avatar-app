@@ -17,7 +17,7 @@ interface Props {
 }
 interface State {}
 
-export default class NationalHat extends Component<Props, State> {
+export default class ShowOnlyHat extends Component<Props, State> {
   static defaultProps = {
     avatarPath: "",
     dx: 0,

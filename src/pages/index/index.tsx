@@ -7,8 +7,8 @@ import * as utils from "../../utils";
 import { logger } from "../../log";
 import { HAT_CATEGORY, IMAGES_URL, DEFAULT_EXPIRE } from "../../constants";
 
-import ChristmasHat from "./ChristmasHat";
-import NationalHat from "./NationalHat";
+import EditableHat from "./EditableHat";
+import ShowOnlyHat from "./ShowOnlyHat";
 
 import "./index.scss";
 
@@ -185,13 +185,13 @@ export default class Index extends Component<{}, State> {
     if (!at) return;
     // 通过解构方式删除 category, demoImg, hatImg 字段
     const { category, demoImg, hatImg, ...args } = at;
-    if (category === HAT_CATEGORY.CHRISTMAS) {
+    if (category === HAT_CATEGORY.EDITABLE) {
       return (
-        <ChristmasHat avatarPath={avatarPath} hatImg={hatImgPath} {...args} />
+        <EditableHat avatarPath={avatarPath} hatImg={hatImgPath} {...args} />
       );
-    } else if (category === HAT_CATEGORY.NATIONAL) {
+    } else if (category === HAT_CATEGORY.SHOW_ONLY) {
       return (
-        <NationalHat avatarPath={avatarPath} hatImg={hatImgPath} {...args} />
+        <ShowOnlyHat avatarPath={avatarPath} hatImg={hatImgPath} {...args} />
       );
     }
     return;

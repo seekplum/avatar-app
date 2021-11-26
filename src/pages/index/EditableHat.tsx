@@ -7,8 +7,8 @@ import {
   CANVAS_WIDTH,
   CANVAS_HEIGHT,
   CANVAS_DELAY,
-  CHRISTMAS_DEFAULT_WIDTH,
-  CHRISTMAS_DEFAULT_HEIGHT
+  EDITABLE_DEFAULT_WIDTH,
+  EDITABLE_DEFAULT_HEIGHT
 } from "../../constants";
 
 import "./index.scss";
@@ -30,20 +30,20 @@ interface State {
   rotateChanged: boolean;
 }
 
-export default class ChristmasHat extends Component<Props, State> {
+export default class EditableHat extends Component<Props, State> {
   static defaultProps = {
     hatImg: "",
     avatarPath: "",
-    width: CHRISTMAS_DEFAULT_WIDTH,
-    height: CHRISTMAS_DEFAULT_HEIGHT,
+    width: EDITABLE_DEFAULT_WIDTH,
+    height: EDITABLE_DEFAULT_HEIGHT,
     x: 0,
     y: 0
   };
   constructor(props) {
     super(props);
     this.state = {
-      x: this.props.x || CHRISTMAS_DEFAULT_WIDTH / 2 + 10,
-      y: this.props.y || CHRISTMAS_DEFAULT_HEIGHT / 2 + 10,
+      x: this.props.x || EDITABLE_DEFAULT_WIDTH / 2 + 10,
+      y: this.props.y || EDITABLE_DEFAULT_HEIGHT / 2 + 10,
       rotate: 0,
       scale: 100,
       scaleChanged: false,
