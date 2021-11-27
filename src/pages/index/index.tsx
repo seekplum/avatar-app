@@ -43,6 +43,13 @@ export default class Index extends Component<{}, State> {
   async componentDidMount() {
     await this.getHatImg();
   }
+  onShareAppMessage({ from: string, target }) {
+    return {
+      title: "邀请好友一起来更换头像吧~",
+      imageUrl: IMAGES_URL.DEMO,
+      path: "pages/index/index"
+    };
+  }
   async getHatImg() {
     const { atIndex, hatImgPath } = this.state;
     if (hatImgPath) return;
