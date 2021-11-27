@@ -2,10 +2,15 @@
 import React, { Component, ReactFragment } from "react";
 import { Button, View, Text, Image, Block } from "@tarojs/components";
 import Taro from "@tarojs/taro";
-import { getGlobalData, setGlobalData, delGlobalData } from "../../global";
+import { getGlobalData, setGlobalData } from "../../global";
 import * as utils from "../../utils";
 import { logger } from "../../log";
-import { HAT_CATEGORY, IMAGES_URL, DEFAULT_EXPIRE } from "../../constants";
+import {
+  AVATAR_FORM,
+  HAT_CATEGORY,
+  IMAGES_URL,
+  DEFAULT_EXPIRE
+} from "../../constants";
 
 import EditableHat from "./EditableHat";
 import ShowOnlyHat from "./ShowOnlyHat";
@@ -18,6 +23,7 @@ interface State {
   atIndex: number;
   hatImgPath: any;
   templates: Array<any>;
+  step: number;
 }
 
 export default class Index extends Component<{}, State> {
@@ -28,14 +34,16 @@ export default class Index extends Component<{}, State> {
       errorMsg: "",
       atIndex: 0,
       hatImgPath: "",
-      templates: []
+      templates: [],
+      step: 1
     };
   }
   async componentWillMount() {
     const cacheAvatarPath = getGlobalData("avatarPath");
     if (cacheAvatarPath && utils.checkFileExists(cacheAvatarPath)) {
       this.setState({
-        avatarPath: cacheAvatarPath
+        avatarPath: cacheAvatarPath,
+        step: 2
       });
     }
     await this.getTemplates();
@@ -70,6 +78,7 @@ export default class Index extends Component<{}, State> {
       try {
         const templates = JSON.parse(cacheTemplates);
         this.setState({ templates });
+        await this.getHatImg();
         return;
       } catch (error) {
         logger.error("模板数据被损坏:", cacheTemplates);
@@ -89,11 +98,11 @@ export default class Index extends Component<{}, State> {
       } = response;
       this.setState({ templates });
       setGlobalData("templates", JSON.stringify(templates), DEFAULT_EXPIRE);
+      await this.getHatImg();
     } catch (error) {
       logger.error("获取模板列表失败:", error);
       this.setState({ errorMsg: "服务异常，可以向开发者反馈解决。" });
     }
-    await this.getHatImg();
   }
   async handleGetUserProfile() {
     try {
@@ -109,20 +118,37 @@ export default class Index extends Component<{}, State> {
         utils.getBetterAvatar(avatarUrl)
       );
       setGlobalData("avatarPath", avatarPath);
-      this.setState({ avatarPath, errorMsg: "" });
+      this.setState({ avatarPath, errorMsg: "", step: 2 });
     } catch (err) {
       //拒绝授权
       logger.error("您拒绝了请求");
       this.setState({
-        errorMsg: "授权失败，无法为您提供服务"
+        errorMsg: "您拒绝了授权，继续使用请重试~"
       });
       return;
     }
+    await this.getTemplates();
   }
 
-  async handleReset() {
-    delGlobalData("templates");
-    await this.handleGetUserProfile();
+  async handlePrev() {
+    this.setState({ step: 1 });
+  }
+
+  async handleChooseImage(way) {
+    try {
+      const res = await Taro.chooseImage({
+        count: 1,
+        sourceType: [way]
+      });
+      const avatarPath = res.tempFilePaths[0];
+      setGlobalData("avatarPath", avatarPath);
+      this.setState({ avatarPath, errorMsg: "", step: 2 });
+    } catch (err) {
+      logger.error("从相册选择图片失败:", err);
+      this.setState({ errorMsg: "从相册选择图片失败，请重试~" });
+      return;
+    }
+    await this.getTemplates();
   }
 
   getCacheHatImg(atIndex: number) {
@@ -174,13 +200,22 @@ export default class Index extends Component<{}, State> {
         <Text className="desc">
           给头像加上国旗🇨🇳、圣诞帽,获取头像后开始制作~
         </Text>
-        <Button
-          type="default"
-          size="mini"
-          onClick={this.handleGetUserProfile.bind(this)}
-        >
-          获取头像
-        </Button>
+        <View className="flexCenter buttonContainer">
+          <Button
+            type="default"
+            size="mini"
+            onClick={this.handleChooseImage.bind(this, AVATAR_FORM.ALBUM)}
+          >
+            相册中选择
+          </Button>
+          <Button
+            type="primary"
+            size="mini"
+            onClick={this.handleGetUserProfile.bind(this)}
+          >
+            获取头像
+          </Button>
+        </View>
         {errorMsg && <Text className="error-msg">{errorMsg}</Text>}
       </Block>
     );
@@ -230,9 +265,9 @@ export default class Index extends Component<{}, State> {
           <Button
             type="default"
             size="mini"
-            onClick={this.handleReset.bind(this)}
+            onClick={this.handlePrev.bind(this)}
           >
-            重新获取头像
+            重新选择头像
           </Button>
           <Button
             type="primary"
@@ -249,11 +284,11 @@ export default class Index extends Component<{}, State> {
   }
 
   render() {
-    const { avatarPath, hatImgPath, errorMsg } = this.state;
+    const { avatarPath, hatImgPath, errorMsg, step } = this.state;
     return (
       <View className="container">
         <View className="contentWrapper">
-          {!!avatarPath && !!hatImgPath && !errorMsg
+          {!!avatarPath && !!hatImgPath && !errorMsg && step === 2
             ? this.renderAvatar()
             : this.renderUnauthorized()}
         </View>

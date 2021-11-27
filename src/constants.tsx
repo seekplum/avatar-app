@@ -16,3 +16,8 @@ export const STORAGE_PREFIX =
 export const IMAGES_URL = {
   DEMO: `${STORAGE_PREFIX}/images/demo.png`
 };
+
+export const AVATAR_FORM = {
+  CAMERA: "camera", // 相机
+  ALBUM: "album" // 相册
+};
