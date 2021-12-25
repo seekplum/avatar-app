@@ -2,14 +2,20 @@
 
 import Taro from "@tarojs/taro";
 import { Component } from "react";
-import { Canvas, Block } from "@tarojs/components";
-import { CANVAS_WIDTH, CANVAS_HEIGHT, CANVAS_DELAY } from "../../constants";
+import { Canvas } from "@tarojs/components";
+import {
+  cropperCanvasId,
+  canvasStyle,
+  CANVAS_WIDTH,
+  CANVAS_HEIGHT,
+  CANVAS_DELAY
+} from "../../constants";
 
 import "./index.scss";
 
 interface Props {
-  hatImg: string;
-  avatarPath: string;
+  hatImg: string | HTMLImageElement;
+  avatarPath: string | HTMLImageElement;
   dx: number;
   dy: number;
   dWidth: number;
@@ -30,44 +36,74 @@ export default class ShowOnlyHat extends Component<Props, State> {
     this.state = {};
   }
   componentDidMount() {
-    this.handleDelayRenderCanvas();
+    this.onDelayRenderCanvas();
   }
   componentDidUpdate(prevProps, prevState) {
     const needUpdate =
       prevProps.hatImg !== this.props.hatImg ||
       prevProps.avatarPath !== this.props.avatarPath;
     if (needUpdate) {
-      this.handleDelayRenderCanvas();
+      this.onDelayRenderCanvas();
     } else if (prevState !== this.state) {
-      this.handleRenderCanvas();
+      this.onRenderCanvas();
     }
   }
-  handleDelayRenderCanvas(): void {
+  onDelayRenderCanvas(): void {
     setTimeout(() => {
-      this.handleRenderCanvas();
+      this.onRenderCanvas();
     }, CANVAS_DELAY);
   }
-  handleRenderCanvas(): void {
+  onRenderCanvas(): void {
     const { avatarPath, hatImg } = this.props;
     if (!avatarPath || !hatImg) return;
     const { dx, dy, dWidth, dHeight } = this.props;
-    const context = Taro.createCanvasContext("avatarCanvas");
+    const context = Taro.createCanvasContext(cropperCanvasId);
     // 清除画布内容
     context.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-    context.drawImage(avatarPath, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-    context.drawImage(hatImg, dx, dy, dWidth, dHeight);
+    let avatarOptions, hatImgOptions;
+    if (typeof avatarPath === "string") {
+      avatarOptions = [avatarPath, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT];
+      hatImgOptions = [hatImg, dx, dy, dWidth, dHeight];
+    } else {
+      const aHeight = avatarPath.height;
+      const aWidth = avatarPath.width;
+      const tHeight = hatImg.height;
+      const tWidth = hatImg.height;
+      avatarOptions = [
+        avatarPath,
+        0,
+        0,
+        aWidth,
+        aHeight * 2,
+        0,
+        0,
+        CANVAS_WIDTH,
+        CANVAS_HEIGHT
+      ];
+      hatImgOptions = [
+        hatImg,
+        dx,
+        dy,
+        tWidth,
+        tHeight * 2,
+        0,
+        0,
+        dWidth,
+        dHeight
+      ];
+    }
+    context.drawImage(...avatarOptions);
+    context.drawImage(...hatImgOptions);
     context.draw();
   }
 
   render() {
     return (
-      <Block>
-        <Canvas
-          canvasId="avatarCanvas"
-          className="canvas"
-          style={`width: ${CANVAS_WIDTH}px; height: ${CANVAS_HEIGHT}px;`}
-        />
-      </Block>
+      <Canvas
+        canvasId={cropperCanvasId}
+        className="canvas"
+        style={canvasStyle}
+      />
     );
   }
 }

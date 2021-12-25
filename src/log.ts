@@ -1,6 +1,5 @@
 import Taro from "@tarojs/taro";
-
-const remoteLogger = Taro.getRealtimeLogManager();
+import { isMiniApp } from "./constants";
 
 class BasicLogHandler {
   info(message?: string, ...args: any[]): void {}
@@ -16,11 +15,12 @@ class LocalHandler extends BasicLogHandler {
   }
 }
 class RemoteHandler extends BasicLogHandler {
+  remoteLogger = Taro.getRealtimeLogManager();
   info(message?: string, ...args: any[]): void {
-    remoteLogger.info(...[message, ...args]);
+    this.remoteLogger.info(...[message, ...args]);
   }
   error(message?: string, ...args: any[]): void {
-    remoteLogger.error(...[message, ...args]);
+    this.remoteLogger.error(...[message, ...args]);
   }
 }
 
@@ -46,7 +46,9 @@ class LogManager {
 function getLogger() {
   const log = new LogManager();
   log.addHandler(new LocalHandler());
-  log.addHandler(new RemoteHandler());
+  if (isMiniApp) {
+    log.addHandler(new RemoteHandler());
+  }
   return log;
 }
 

@@ -45,21 +45,64 @@ export async function saveCanvasToAlbum(canvasId: string) {
     canvasId: canvasId
   });
   const { tempFilePath } = res;
-
-  const settings = await Taro.getSetting();
-  if (settings.authSetting["scope.writePhotosAlbum"]) {
-    await rawSaveTempFileToAlbum(tempFilePath);
-  } else {
-    try {
-      await Taro.authorize({
-        scope: "scope.writePhotosAlbum"
-      });
-
+  if (isMiniApp()) {
+    const settings = await Taro.getSetting();
+    if (settings.authSetting["scope.writePhotosAlbum"]) {
       await rawSaveTempFileToAlbum(tempFilePath);
-    } catch (err) {
-      showSettingsModal();
+    } else {
+      try {
+        await Taro.authorize({
+          scope: "scope.writePhotosAlbum"
+        });
+
+        await rawSaveTempFileToAlbum(tempFilePath);
+      } catch (err) {
+        showSettingsModal();
+      }
     }
+  } else if (isH5App()) {
+    const now = new Date();
+    const tmpValues = [
+      "avatar",
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      now.getHours(),
+      now.getMinutes(),
+      now.getSeconds(),
+      now.getMilliseconds()
+    ];
+    const filename = tmpValues.join("_") + ".png";
+    //将图片保存到本地
+    const link = document.createElement("a");
+    link.href = tempFilePath;
+    link.download = filename;
+    link.click();
   }
+}
+
+export async function convertBlobToImage(url: any) {
+  if (typeof url !== "string" || !isH5App()) {
+    return new Promise((resolve, reject) => {
+      resolve(url);
+    });
+  }
+
+  if (url.startsWith("blob:")) {
+    return new Promise((resolve, reject) => {
+      const image = new Image();
+      image.setAttribute("crossOrigin", "anonymous");
+      image.src = url;
+      image.id = `taro_cropper_${Date.now()}`;
+      image.style.display = "none";
+      document.body.append(image);
+      image.onload = () => resolve(image);
+      image.onerror = () => reject(image);
+    });
+  }
+  return new Promise((resolve, reject) => {
+    resolve(url);
+  });
 }
 
 export async function downloadFile(url: any) {
@@ -71,7 +114,7 @@ export async function downloadFile(url: any) {
       const task = await Taro.downloadFile({
         url
       });
-      return task.tempFilePath;
+      return await convertBlobToImage(task.tempFilePath);
     } catch (err) {
       logger.error("下载URL内容失败:", err);
       throw err;
@@ -81,7 +124,7 @@ export async function downloadFile(url: any) {
       const response = await Taro.cloud.downloadFile({
         fileID: url
       });
-      return response.tempFilePath;
+      return await convertBlobToImage(response.tempFilePath);
     } catch (err) {
       logger.error("下载云存储文件失败:", err);
       throw err;
@@ -108,15 +151,26 @@ export async function getUserInfoAndDownloadAvatar() {
     } catch (err) {
       logger.error("获取用户信息失败:", err);
     }
-  } catch (error) {}
+  } catch (err) {}
 }
 
 export function checkFileExists(path: string): boolean {
-  const fs = Taro.getFileSystemManager();
-  try {
-    fs.accessSync(path);
-  } catch (error) {
-    return false;
+  if (isMiniApp()) {
+    const fs = Taro.getFileSystemManager();
+    try {
+      fs.accessSync(path);
+      return true;
+    } catch (err) {
+      return false;
+    }
   }
-  return true;
+  return false;
+}
+
+export function isMiniApp() {
+  return process.env.TARO_ENV === "weapp";
+}
+
+export function isH5App() {
+  return process.env.TARO_ENV === "h5";
 }

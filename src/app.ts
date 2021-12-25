@@ -1,9 +1,12 @@
 /** @format */
 import Taro from "@tarojs/taro";
 import { Component } from "react";
+import { isMiniApp } from "./constants";
 import "./app.scss";
 
-Taro.cloud.init();
+if (isMiniApp) {
+  Taro.cloud.init();
+}
 
 class App extends Component {
   // this.props.children 是将要会渲染的页面

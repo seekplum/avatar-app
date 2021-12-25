@@ -1,13 +1,30 @@
 /** @format */
 
+// 基本间距
+$margin-xs: 4px;
+$margin-small: 8px;
+$margin-medium: 12px;
+$margin-large: 20px;
+
+// 字体大小
+$font-size-small: 12px;
+$font-size-medium: 14px;
+$font-size-large: 16px;
+$font-size-extra-large: 20px;
+$font-size-xxl: 24px;
+$font-size-xxxl: 28px;
+
+$avatar-demo-width: 120px;
+$avatar-demo-height: 120px;
+
 .container {
-  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
   padding: 20px 0;
   box-sizing: border-box;
+  font-size: $font-size-xxl;
 }
 
 .contentWrapper {
@@ -24,6 +41,10 @@
 
 .buttonContainer {
   width: 100%;
+
+  > taro-button-core {
+    margin-top: 0;
+  }
 }
 
 .slider {
@@ -36,14 +57,16 @@
 }
 
 .desc {
-  margin-top: 32px;
-  margin-bottom: 32px;
+  margin-top: $margin-medium;
+  margin-bottom: $margin-medium;
   width: 480px;
+  font-size: $font-size-extra-large;
+  text-align: center;
 }
 
 .error-msg {
   color: red;
-  margin-top: 32px;
+  margin-top: $margin-medium;
 }
 
 .canvas {
@@ -55,22 +78,18 @@
   width: 600px;
   display: grid;
   justify-content: space-between;
-  grid-template-columns: repeat(auto-fill, 120px);
+  grid-template-columns: repeat(auto-fill, $avatar-demo-width);
   grid-gap: 8px;
   margin: 8px 0 32px 0;
 }
 
 .avatarDemo {
-  width: 120px;
-  height: 120px;
+  width: $avatar-demo-width;
+  height: $avatar-demo-height;
   padding: 4px;
   border: 1px solid #e6e6e6;
 
   &.active {
     border-color: #0088df;
-  }
-
-  &:nth-child(n + 4) {
-    margin-top: 8px;
   }
 }

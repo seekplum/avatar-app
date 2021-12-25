@@ -1,15 +1,18 @@
 /** @format */
 import React, { Component, ReactFragment } from "react";
-import { Button, View, Text, Image, Block } from "@tarojs/components";
+import { Button, View, Text, Image } from "@tarojs/components";
 import Taro from "@tarojs/taro";
-import { getGlobalData, setGlobalData } from "../../global";
+import { getGlobalData, setGlobalData, clearGlobalData } from "../../global";
 import * as utils from "../../utils";
 import { logger } from "../../log";
 import {
+  isMiniApp,
+  isH5App,
   AVATAR_FORM,
   HAT_CATEGORY,
   IMAGES_URL,
-  DEFAULT_EXPIRE
+  DEFAULT_EXPIRE,
+  CDN_TEMPLATES
 } from "../../constants";
 
 import EditableHat from "./EditableHat";
@@ -18,10 +21,10 @@ import ShowOnlyHat from "./ShowOnlyHat";
 import "./index.scss";
 
 interface State {
-  avatarPath: string;
+  avatarPath: string | HTMLImageElement;
   errorMsg: string;
   atIndex: number;
-  hatImgPath: any;
+  hatImgPath: string | HTMLImageElement;
   templates: Array<any>;
   step: number;
 }
@@ -72,39 +75,43 @@ export default class Index extends Component<{}, State> {
     }
   }
   async getTemplates() {
-    // 优先从缓存中获取
-    const cacheTemplates = getGlobalData("templates");
-    if (cacheTemplates) {
-      try {
-        const templates = JSON.parse(cacheTemplates);
-        this.setState({ templates });
-        await this.getHatImg();
-        return;
-      } catch (error) {
-        logger.error("模板数据被损坏:", cacheTemplates);
-      }
-    }
     try {
-      const response = await Taro.cloud.callFunction({
-        name: "api",
-        data: {
-          $url: "template/list"
+      if (isH5App || isMiniApp) {
+        this.setState({ templates: CDN_TEMPLATES });
+      } else if (isMiniApp) {
+        // 优先从缓存中获取
+        const cacheTemplates = getGlobalData("templates");
+        if (cacheTemplates) {
+          try {
+            const templates = JSON.parse(cacheTemplates);
+            this.setState({ templates });
+            await this.getHatImg();
+            return;
+          } catch (err) {
+            logger.error("模板数据被损坏:", cacheTemplates);
+          }
         }
-      });
-      const {
-        result: {
-          data: { templates }
-        }
-      } = response;
-      this.setState({ templates });
-      setGlobalData("templates", JSON.stringify(templates), DEFAULT_EXPIRE);
+        const response = await Taro.cloud.callFunction({
+          name: "api",
+          data: {
+            $url: "template/list"
+          }
+        });
+        const {
+          result: {
+            data: { templates }
+          }
+        } = response;
+        this.setState({ templates });
+        setGlobalData("templates", JSON.stringify(templates), DEFAULT_EXPIRE);
+      }
       await this.getHatImg();
-    } catch (error) {
-      logger.error("获取模板列表失败:", error);
+    } catch (err) {
+      logger.error("获取模板列表失败:", err);
       this.setState({ errorMsg: "服务异常，可以向开发者反馈解决。" });
     }
   }
-  async handleGetUserProfile() {
+  async onGetUserProfile() {
     try {
       const response = await Taro.getUserProfile({
         lang: "zh_CN",
@@ -130,18 +137,20 @@ export default class Index extends Component<{}, State> {
     await this.getTemplates();
   }
 
-  async handlePrev() {
+  async onPrev() {
     this.setState({ step: 1 });
   }
 
-  async handleChooseImage(way) {
+  async onChooseImage(way) {
     try {
       const res = await Taro.chooseImage({
         count: 1,
+        sizeType: ["original"],
         sourceType: [way]
       });
-      const avatarPath = res.tempFilePaths[0];
-      setGlobalData("avatarPath", avatarPath);
+      const avatarPath: HTMLImageElement = await utils.convertBlobToImage(
+        res.tempFilePaths[0]
+      );
       this.setState({ avatarPath, errorMsg: "", step: 2 });
     } catch (err) {
       logger.error("从相册选择图片失败:", err);
@@ -180,12 +189,14 @@ export default class Index extends Component<{}, State> {
         setGlobalData(hatImg, hatImgPath);
       }
       return hatImgPath;
-    } catch (error) {
+    } catch (err) {
+      logger.error("获取临时路径失败:", err);
+      clearGlobalData();
       this.setState({ errorMsg: "请重新获取头像后再试~" });
     }
   }
 
-  async handleCategory(atIndex: number) {
+  async onCategory(atIndex: number) {
     const hatImgPath = await this.getTempFilePath(atIndex);
     if (hatImgPath) {
       this.setState({ atIndex, hatImgPath });
@@ -195,7 +206,7 @@ export default class Index extends Component<{}, State> {
   renderUnauthorized(): ReactFragment {
     const { errorMsg } = this.state;
     return (
-      <Block>
+      <>
         <Image className="demo" src={IMAGES_URL.DEMO} />
         <Text className="desc">
           给头像加上国旗🇨🇳、圣诞帽,获取头像后开始制作~
@@ -204,20 +215,22 @@ export default class Index extends Component<{}, State> {
           <Button
             type="default"
             size="mini"
-            onClick={this.handleChooseImage.bind(this, AVATAR_FORM.ALBUM)}
+            onClick={this.onChooseImage.bind(this, AVATAR_FORM.ALBUM)}
           >
             相册中选择
           </Button>
-          <Button
-            type="primary"
-            size="mini"
-            onClick={this.handleGetUserProfile.bind(this)}
-          >
-            获取头像
-          </Button>
+          {isMiniApp && (
+            <Button
+              type="primary"
+              size="mini"
+              onClick={this.onGetUserProfile.bind(this)}
+            >
+              获取头像
+            </Button>
+          )}
         </View>
         {errorMsg && <Text className="error-msg">{errorMsg}</Text>}
-      </Block>
+      </>
     );
   }
 
@@ -248,7 +261,9 @@ export default class Index extends Component<{}, State> {
           {templates.map((at, idx) => {
             const { demoImg } = at;
             const cacheDemoImg =
-              typeof demoImg === "string"
+              typeof demoImg === "string" &&
+              !isH5App &&
+              !demoImg.startsWith("blob:")
                 ? getGlobalData(demoImg) || demoImg
                 : demoImg;
             return (
@@ -256,17 +271,13 @@ export default class Index extends Component<{}, State> {
                 key={`${at.category}_${at.hatImg}`}
                 className={`avatarDemo ${idx === atIndex ? "active" : ""}`}
                 src={cacheDemoImg}
-                onClick={() => this.handleCategory(idx)}
+                onClick={() => this.onCategory(idx)}
               />
             );
           })}
         </View>
         <View className="flexCenter buttonContainer">
-          <Button
-            type="default"
-            size="mini"
-            onClick={this.handlePrev.bind(this)}
-          >
+          <Button type="default" size="mini" onClick={this.onPrev.bind(this)}>
             重新选择头像
           </Button>
           <Button

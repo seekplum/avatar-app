@@ -1,9 +1,11 @@
 /** @format */
 import Taro from "@tarojs/taro";
 import { Component } from "react";
-import { View, Text, Slider, Canvas, Block } from "@tarojs/components";
+import { View, Text, Slider, Canvas } from "@tarojs/components";
 
 import {
+  cropperCanvasId,
+  canvasStyle,
   CANVAS_WIDTH,
   CANVAS_HEIGHT,
   CANVAS_DELAY,
@@ -14,8 +16,8 @@ import {
 import "./index.scss";
 
 interface Props {
-  hatImg: string;
-  avatarPath: string;
+  hatImg: string | HTMLImageElement;
+  avatarPath: string | HTMLImageElement;
   width: number;
   height: number;
   x?: number;
@@ -51,7 +53,7 @@ export default class EditableHat extends Component<Props, State> {
     };
   }
   componentDidMount() {
-    this.handleDelayRenderCanvas();
+    this.onDelayRenderCanvas();
   }
   componentWillReceiveProps(nextProps: Props) {
     let values = {};
@@ -71,17 +73,17 @@ export default class EditableHat extends Component<Props, State> {
       prevProps.hatImg !== this.props.hatImg ||
       prevProps.avatarPath !== this.props.avatarPath;
     if (needUpdate) {
-      this.handleDelayRenderCanvas();
+      this.onDelayRenderCanvas();
     } else if (prevState !== this.state) {
-      this.handleRenderCanvas();
+      this.onRenderCanvas();
     }
   }
-  handleDelayRenderCanvas(): void {
+  onDelayRenderCanvas(): void {
     setTimeout(() => {
-      this.handleRenderCanvas();
+      this.onRenderCanvas();
     }, CANVAS_DELAY);
   }
-  handleMoveHat = e => {
+  onMoveHat = e => {
     const touch = e.touches[0];
     if (touch === undefined) return;
     this.setState({
@@ -89,7 +91,7 @@ export default class EditableHat extends Component<Props, State> {
       y: touch.y
     });
   };
-  handleChangeRotateHat = e => {
+  onChangeRotateHat = e => {
     const { rotateChanged } = this.state;
     this.setState({ rotateChanged: false });
     if (rotateChanged) {
@@ -101,7 +103,7 @@ export default class EditableHat extends Component<Props, State> {
       rotate: val
     });
   };
-  handleChangeScaleHat = e => {
+  onChangeScaleHat = e => {
     const { scaleChanged } = this.state;
     this.setState({ scaleChanged: false });
     if (scaleChanged) {
@@ -113,7 +115,7 @@ export default class EditableHat extends Component<Props, State> {
       scale: val
     });
   };
-  handleRotateHat = e => {
+  onRotateHat = e => {
     const val = e.detail && e.detail.value;
     if (val === undefined) return;
     this.setState({
@@ -121,7 +123,7 @@ export default class EditableHat extends Component<Props, State> {
       rotateChanged: true
     });
   };
-  handleScaleHat = e => {
+  onScaleHat = e => {
     const val = e.detail && e.detail.value;
     if (val === undefined) return;
     this.setState({
@@ -129,35 +131,61 @@ export default class EditableHat extends Component<Props, State> {
       scaleChanged: true
     });
   };
-  handleRenderCanvas(): void {
+  onRenderCanvas(): void {
     const { avatarPath, hatImg } = this.props;
     if (!avatarPath || !hatImg) return;
     const { width, height } = this.props;
     const { x, y, scale, rotate } = this.state;
     const newScale = scale / 100;
     const newRotate = (rotate * Math.PI) / 180;
-    const context = Taro.createCanvasContext("avatarCanvas");
-    context.drawImage(avatarPath, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    const context = Taro.createCanvasContext(cropperCanvasId);
+    // 清除画布内容
+    context.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    context.save();
+    let avatarOptions, hatImgOptions;
+    if (typeof avatarPath === "string" && typeof hatImg === "string") {
+      avatarOptions = [avatarPath, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT];
+      hatImgOptions = [hatImg, -width / 2, -height / 2, width, height];
+    } else {
+      const aHeight = avatarPath.height;
+      const aWidth = avatarPath.width;
+      // const tHeight = hatImg.height;
+      // const tWidth = hatImg.width;
+      avatarOptions = [
+        avatarPath,
+        0,
+        0,
+        aWidth,
+        aHeight * 2,
+        0,
+        0,
+        CANVAS_WIDTH,
+        CANVAS_HEIGHT
+      ];
+      hatImgOptions = [hatImg, -width / 2, -height / 2, width, height / 2];
+    }
+    context.drawImage(...avatarOptions);
     // 坐标参考调整
     context.translate(x, y);
     // 缩放调整
     context.scale(newScale, newScale);
     // 旋转调整
     context.rotate(newRotate);
-    context.drawImage(hatImg, -width / 2, -height / 2, width, height);
+    context.drawImage(...hatImgOptions);
     context.draw();
+    context.restore();
   }
 
   render() {
     const { rotate, scale } = this.state;
     return (
-      <Block>
+      <>
         <Canvas
-          canvasId="avatarCanvas"
+          canvasId={cropperCanvasId}
           className="canvas"
-          onTouchStart={this.handleMoveHat}
-          onTouchMove={this.handleMoveHat}
-          style={`width: ${CANVAS_WIDTH}px; height: ${CANVAS_HEIGHT}px;`}
+          onTouchStart={this.onMoveHat}
+          onTouchMove={this.onMoveHat}
+          style={canvasStyle}
         />
         <View className="flexCenter">
           <Text>旋转</Text>
@@ -167,8 +195,8 @@ export default class EditableHat extends Component<Props, State> {
             max={360}
             step={1}
             value={rotate}
-            onChange={this.handleChangeRotateHat}
-            onChanging={this.handleRotateHat}
+            onChange={this.onChangeRotateHat}
+            onChanging={this.onRotateHat}
           />
         </View>
         <View className="flexCenter">
@@ -179,11 +207,11 @@ export default class EditableHat extends Component<Props, State> {
             max={200}
             step={1}
             value={scale}
-            onChange={this.handleChangeScaleHat}
-            onChanging={this.handleScaleHat}
+            onChange={this.onChangeScaleHat}
+            onChanging={this.onScaleHat}
           />
         </View>
-      </Block>
+      </>
     );
   }
 }
